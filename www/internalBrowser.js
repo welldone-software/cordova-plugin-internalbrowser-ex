@@ -11,7 +11,7 @@ module.exports = {
             return config[configName];
         });
 
-        exec(successCallback, errorCallback, 'InternalBrowser', 'showPage', [params]);
+        exec(successCallback, errorCallback, 'InternalBrowser', 'show', [params]);
     },
 
     dismiss: function(successCallback, errorCallback) {
