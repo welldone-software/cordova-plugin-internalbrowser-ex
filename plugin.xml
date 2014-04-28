@@ -29,11 +29,19 @@
 				<param name="android-package" value="welldonesoftware.cordova.plugins.internalBrowser"/>
 			</feature>
 		</config-file>
+		
+		<config-file target="res/values/strings.xml" parent="/*">
+			<string name="internal_browser_close_button">Close</string>
+			<string name="internal_browser_external_button">Open Browser</string>
+		</config-file>
 
 		<config-file target="AndroidManifest.xml" parent="/manifest">
 		</config-file>
 
-		<source-file src="src/android/InternalBrowser.java" target-dir="src/welldonesoftware/cordova/plugins/internalBrowser/" />
+		<source-file src="src/android/src/InternalBrowser.java" target-dir="src/welldonesoftware/cordova/plugins/internalBrowser/" />
+		<source-file src="src/android/res/layout/internal_browser_dialog.xml" target-dir="res/layout/" />
+		<source-file src="src/android/res/drawable/icon_close.png" target-dir="res/drawable/" />
+		<source-file src="src/android/res/drawable/icon_external.png" target-dir="res/drawable/" />
 
 	</platform>
 
