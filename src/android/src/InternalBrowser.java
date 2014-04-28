@@ -1,5 +1,8 @@
 package welldonesoftware.cordova.plugins;
 
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaPlugin;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import android.annotation.SuppressLint;
@@ -9,10 +12,12 @@ import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -22,71 +27,113 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebSettings.PluginState;
-import android.webkit.WebSettings.ZoomDensity;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
 @SuppressLint("SetJavaScriptEnabled")
-public class InternalBrowserCommand extends BaseCommand {
+public class InternalBrowser extends CordovaPlugin {
+	
+	@Override
+    public boolean execute(String action, JSONArray argsArr, CallbackContext callbackContext) {		
+		try {
+			
+			JSONObject args = argsArr.length() > 0 ?
+					argsArr.getJSONObject(0) : new JSONObject();
+					
+			if (action.equals("dismiss")) {
+				this.dismiss(callbackContext, args);
+	        } 
+			else if (action.equals("refresh")){
+	            this.refresh(callbackContext, args);
+	        }
+			else if (action.equals("show")){
+	            this.show(callbackContext, args);
+	        }
+	        else {
+	            return false;
+	        }
+			
+        } catch (Exception e) {
+			e.printStackTrace();
+			callbackContext.error(e.getMessage());
+		}
+      
+        return true;
+    }
+	
+	private static String TAG = "InternalBrowser";
 	
 	private MainDialogRunnable internalBrowserThreadInstance = null;
 	
-	public void onActionDismissInternalBrowser(final String callbackId, JSONObject args) throws Exception{
-		if(internalBrowserThreadInstance != null){
-			internalBrowserThreadInstance.closeDialog(null);
+	public void dismiss(CallbackContext callbackContext, JSONObject args) throws Exception{
+		if(internalBrowserThreadInstance == null){
+			return;
 		}
+		
+		internalBrowserThreadInstance.closeDialog(null);
 	}
 	
-	public void onActionRefresh(final String callbackId, JSONObject args) throws Exception{
-		if(internalBrowserThreadInstance != null){
-			internalBrowserThreadInstance.refresh();
+	public void refresh(CallbackContext callbackContext, JSONObject args) throws Exception{
+		if(internalBrowserThreadInstance == null){
+			return;
 		}
+		
+		//TODO change url;
+		internalBrowserThreadInstance.refresh();
 	}
 	
-	public Object onActionShowPage(final String callbackId, JSONObject args) throws Exception
+	public void show(CallbackContext callbackContext, JSONObject args) throws Exception
 	{
 		InternalBrowserOptions options = new InternalBrowserOptions(args);
-		//ProxyUtils.setStoredProxy(options.getProxy());
-
-		internalBrowserThreadInstance = new MainDialogRunnable(options, callbackId);
+		
+		internalBrowserThreadInstance = new MainDialogRunnable(options, callbackContext);
+		
 		cordova.getActivity().runOnUiThread(internalBrowserThreadInstance);
-
-		return createDelayedResult();
 	}
 	
 	class MainDialogRunnable implements Runnable {
 		private final InternalBrowserOptions options;
-		private final String callbackId;
+		private final CallbackContext callbackContext;
+		
 		private JSONObject response;
-		private Dialog dialog;
-		private WebView webview;
-		private ProgressBar progressBar;
 		private String loadingUrl;
 
-		public MainDialogRunnable(final InternalBrowserOptions options, final String callbackId){
+		private Resources resources;
+		private String packageName;
+		
+		private WebView webview;
+		private Dialog dialog;
+		private ProgressBar progressBar;
+		
+		private int getIdentifier(String name, String defType){
+			return resources.getIdentifier("icon_close", "drawable", packageName);
+		}
+		
+		public MainDialogRunnable(final InternalBrowserOptions options, final CallbackContext callbackContext){
 			this.response = new JSONObject();
 			this.options = options;
-			this.callbackId = callbackId;
+			this.callbackContext = callbackContext;			
+			this.resources = cordova.getActivity().getApplicationContext().getResources();                       
+            this.packageName = cordova.getActivity().getApplicationContext().getPackageName();
 		}
 		
 		public void closeDialog(String url){
 			try{
 				if(url == null){
-					getLog().debug("closing InternalBrowser on cancel button.");
+					Log.d(TAG, "closing InternalBrowser on cancel button.");
 					response.put("isDone", true);
 				}
 				else{
-					getLog().debug("closing InternalBrowser on url:" + url);
+					Log.d(TAG, "closing InternalBrowser on url:" + url);
 					response.put("closedByURL", url);
 				}
 				dialog.dismiss();
 			}
 			catch (JSONException e){
 				e.printStackTrace();
-				getLog().error("Couldn't edit the response");
+				Log.e(TAG, "Couldn't edit the response");
 			}
 		}
 		
@@ -99,11 +146,11 @@ public class InternalBrowserCommand extends BaseCommand {
 		{
 			dialog = createDialog();
 
-			webview = (WebView)dialog.findViewById(R.id.webView1);
+			webview = (WebView)dialog.findViewById(getIdentifier("webView1", "id"));
 			
-			progressBar = (ProgressBar)dialog.findViewById(R.id.progressBar1);
+			progressBar = (ProgressBar)dialog.findViewById(getIdentifier("progressBar1", "id"));
 			
-			dialog.findViewById(R.id.imageButton1).setOnClickListener(new View.OnClickListener() {
+			dialog.findViewById(getIdentifier("imageButton1", "id")).setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v){
 					closeDialog(null);
@@ -111,9 +158,9 @@ public class InternalBrowserCommand extends BaseCommand {
 			});
 			
 			if(options.isShowOpenInExternal()){
-				ImageButton openInExternl = (ImageButton)dialog.findViewById(R.id.imageButton2);
-				openInExternl.setVisibility(ImageButton.VISIBLE);
-				openInExternl.setOnClickListener(new View.OnClickListener() {
+				View openExternal = dialog.findViewById(getIdentifier("imageButton2", "id"));
+				openExternal.setVisibility(ImageButton.VISIBLE);
+				openExternal.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v){
 						if(loadingUrl!=null){
@@ -132,17 +179,9 @@ public class InternalBrowserCommand extends BaseCommand {
 				public void onDismiss(DialogInterface dialog)
 				{
 					webview.destroy();
-					success(response, callbackId);
+					callbackContext.success(response);
 				}
 			});
-			
-//			try{
-//				ProxyUtils.setWebViewProxy(webview);
-//			}
-//			catch (Exception e){
-//				e.printStackTrace();
-//				getLog().warn("couldn't set proxy on the internal browser", e);
-//			}
 
 			WebSettings settings = webview.getSettings();
 
@@ -152,9 +191,6 @@ public class InternalBrowserCommand extends BaseCommand {
 			settings.setSupportZoom(true);
 			settings.setBuiltInZoomControls(true);
 			settings.setUseWideViewPort(true);
-			settings.setDefaultZoom(ZoomDensity.MEDIUM);
-
-			settings.setPluginState(PluginState.ON);
 
 			settings.setDomStorageEnabled(true);
 			
@@ -171,7 +207,7 @@ public class InternalBrowserCommand extends BaseCommand {
 		private Dialog createDialog()
 		{
 			Dialog dialog = new Dialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
-			dialog.setContentView(R.layout.internal_browser_dialog);
+			dialog.setContentView(getIdentifier("internal_browser_dialog", "layout"));
 			dialog.setCancelable(true);
 
 			return dialog;
@@ -183,7 +219,6 @@ public class InternalBrowserCommand extends BaseCommand {
 
 			public ChildBrowserClient()
 			{
-				//httpAuthTryCount = 0;
 				scriptToInject = options.getScript();
 				cookieSyncManager = CookieSyncManager.createInstance(cordova.getActivity());
 				cookieSyncManager.sync();
@@ -308,7 +343,7 @@ public class InternalBrowserCommand extends BaseCommand {
 					return url.equals(closeUrl);
 				}
 				
-				getLog().warn("closeCompareType of internal browser is unrecognized. using \"equals\" instead.");
+				Log.w(TAG, "closeCompareType of internal browser is unrecognized. using \"equals\" instead.");
 				return url.equals(closeUrl);
 				
 			}
