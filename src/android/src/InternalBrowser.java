@@ -42,14 +42,14 @@ public class InternalBrowser extends CordovaPlugin {
 			JSONObject args = argsArr.length() > 0 ?
 					argsArr.getJSONObject(0) : new JSONObject();
 					
-			if (action.equals("dismiss")) {
-				this.dismiss(callbackContext, args);
-	        } 
-			else if (action.equals("refresh")){
-	            this.refresh(callbackContext, args);
-	        }
-			else if (action.equals("show")){
+			if (action.equals("show")){
 	            this.show(callbackContext, args);
+	        }
+			else if (action.equals("dismiss")){
+	            this.dismiss(callbackContext, args);
+	        }
+			else if (action.equals("refresh")) {
+				this.refresh(callbackContext, args);
 	        }
 	        else {
 	            return false;
@@ -108,7 +108,7 @@ public class InternalBrowser extends CordovaPlugin {
 		private ProgressBar progressBar;
 		
 		private int getIdentifier(String name, String defType){
-			return resources.getIdentifier("icon_close", "drawable", packageName);
+			return resources.getIdentifier(name, defType, packageName);
 		}
 		
 		public MainDialogRunnable(final InternalBrowserOptions options, final CallbackContext callbackContext){
@@ -123,7 +123,7 @@ public class InternalBrowser extends CordovaPlugin {
 			try{
 				if(url == null){
 					Log.d(TAG, "closing InternalBrowser on cancel button.");
-					response.put("isDone", true);
+					response.put("cancelled", true);
 				}
 				else{
 					Log.d(TAG, "closing InternalBrowser on url:" + url);
