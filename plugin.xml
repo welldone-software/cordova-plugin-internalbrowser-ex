@@ -26,7 +26,7 @@
 
 		<config-file target="res/xml/config.xml" parent="/*">
 			<feature name="InternalBrowser" >
-				<param name="android-package" value="welldonesoftware.cordova.plugins.internalBrowser"/>
+				<param name="android-package" value="welldonesoftware.cordova.plugins.internalBrowser.InternalBrowser"/>
 			</feature>
 		</config-file>
 		

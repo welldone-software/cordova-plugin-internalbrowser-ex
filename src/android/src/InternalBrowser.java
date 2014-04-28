@@ -1,4 +1,4 @@
-package welldonesoftware.cordova.plugins;
+package welldonesoftware.cordova.plugins.internalBrowser;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
