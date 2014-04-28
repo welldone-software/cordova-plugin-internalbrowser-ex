@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="welldonesoftware.cordova.plugins.InternalBrowser"
+    version="0.1.0">
+
+  <name>InternalBrowser</name>
+	<author>danikenan@gmail.com</author>
+
+	<description>
+		Display internal browser with ability to control the flow, inject and extract information from browsed pages.
+	</description>
+
+	<license>MIT</license>
+
+	<js-module src="www/internalBrowser.js" name="InternalBrowser">
+   		<clobbers target="cordova.getAppInfo" />
+	</js-module>
+
+	<engines>
+		<engine name="cordova" version=">=3.0.0" />
+	</engines>
+
+	
+	<platform name="android">
+
+		<config-file target="res/xml/config.xml" parent="/*">
+			<feature name="InternalBrowser" >
+				<param name="android-package" value="welldonesoftware.cordova.plugins.internalBrowser"/>
+			</feature>
+		</config-file>
+
+		<config-file target="AndroidManifest.xml" parent="/manifest">
+		</config-file>
+
+		<source-file src="src/android/InternalBrowser.java" target-dir="src/welldonesoftware/cordova/plugins/internalBrowser/" />
+
+	</platform>
+
+</plugin>
