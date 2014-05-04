@@ -6,7 +6,7 @@ module.exports = {
         var params = [
                 'closeOnRequestURL', 'closeOnReturnURL', 'closeCompareType', 'fancyCloseButton',
                 'scalePageToFit', 'script', 'shouldStopOnPost', 'showToolbar', 'showToolbarWhileLoading',
-                'showOpenInExternal', 'url', 'useAsync', 'user', 'password', 'proxy'
+                'showOpenInExternal', 'url', 'useAsync', 'user', 'password', 'proxy', 'scriptToEvaluate'
         ].map(function(configName){
             return config[configName];
         });

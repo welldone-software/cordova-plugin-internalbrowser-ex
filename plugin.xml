@@ -14,7 +14,7 @@
 	<license>MIT</license>
 
 	<js-module src="www/internalBrowser.js" name="InternalBrowser">
-   		<clobbers target="cordova.getAppInfo" />
+   		<clobbers target="cordova.internalBrowser" />
 	</js-module>
 
 	<engines>

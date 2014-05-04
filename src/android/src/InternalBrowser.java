@@ -22,8 +22,10 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.HttpAuthHandler;
+import android.webkit.JsResult;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -35,6 +37,8 @@ import android.widget.ProgressBar;
 @SuppressLint("SetJavaScriptEnabled")
 public class InternalBrowser extends CordovaPlugin {
 	
+	private static final String ALERT_TO_RETURN = "___ALERT_TO_RETURN_";
+
 	@Override
     public boolean execute(String action, JSONArray argsArr, CallbackContext callbackContext) {		
 		try {
@@ -119,15 +123,15 @@ public class InternalBrowser extends CordovaPlugin {
             this.packageName = cordova.getActivity().getApplicationContext().getPackageName();
 		}
 		
-		public void closeDialog(String url){
+		public void closeDialog(String result){
 			try{
-				if(url == null){
+				if(result == null){
 					Log.d(TAG, "closing InternalBrowser on cancel button.");
 					response.put("cancelled", true);
 				}
 				else{
-					Log.d(TAG, "closing InternalBrowser on url:" + url);
-					response.put("closedByURL", url);
+					Log.d(TAG, "closing InternalBrowser with result url:" + result);
+					response.put("result", result);
 				}
 				dialog.dismiss();
 			}
@@ -171,7 +175,19 @@ public class InternalBrowser extends CordovaPlugin {
 				});
 			}
 			
-			webview.setWebChromeClient(new WebChromeClient());
+			webview.setWebChromeClient(new WebChromeClient(){
+				@Override
+				public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+					if(!message.startsWith(ALERT_TO_RETURN)){
+						return super.onJsAlert(view, url, message, result);
+					};
+					
+					message = message.substring(ALERT_TO_RETURN.length());
+					closeDialog(message);
+					
+					return true;
+				}
+			});
 			webview.setWebViewClient(new ChildBrowserClient());
 						
 			dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -216,14 +232,23 @@ public class InternalBrowser extends CordovaPlugin {
 		class ChildBrowserClient extends WebViewClient {
 			private CookieSyncManager cookieSyncManager;
 			private String scriptToInject;
-
+			private String scriptToEvaluate;
+			
 			public ChildBrowserClient()
 			{
 				scriptToInject = options.getScript();
+				scriptToEvaluate = options.getScriptToEvaluate();
 				cookieSyncManager = CookieSyncManager.createInstance(cordova.getActivity());
 				cookieSyncManager.sync();
 				CookieManager.getInstance().setAcceptCookie(true);
 				CookieManager.getInstance().removeExpiredCookie();
+			}
+			
+			@Override
+			public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+
+				
+				return super.shouldInterceptRequest(view, url);
 			}
 			
 			@Override
@@ -298,7 +323,7 @@ public class InternalBrowser extends CordovaPlugin {
 
 			@Override
 			public void onPageFinished(WebView view, String url)
-			{
+			{				
 				String[] loadingUrls = options.getCloseOnReturnURLs();
 				for (String loadingUrl : loadingUrls)
 				{
@@ -310,9 +335,13 @@ public class InternalBrowser extends CordovaPlugin {
 				}
 				if(scriptToInject != null){
 					view.loadUrl("javascript:"+scriptToInject);
-					view.setVisibility(WebView.VISIBLE);
 					scriptToInject = null;
 				}
+				if(scriptToEvaluate != null){
+					view.loadUrl("javascript:"+scriptToEvaluate);
+					scriptToEvaluate = null;
+				}
+				view.setVisibility(WebView.VISIBLE);
 				progressBar.setVisibility(ProgressBar.INVISIBLE);
 				cookieSyncManager.sync();
 				super.onPageFinished(view, url);
@@ -356,6 +385,8 @@ public class InternalBrowser extends CordovaPlugin {
 		private String password;
 		private String user;
 		private String script;
+		private String scriptToEvaluate;
+		private String closeOnInjectAnswer;
 		private String[] closeOnReturnURLs;
 		private String[] closeOnRequestURLs;
 		private String closeCompareType;
@@ -374,8 +405,10 @@ public class InternalBrowser extends CordovaPlugin {
 			password = args.optString("password", null);
 			user = args.optString("user", null);
 			script = args.optString("script", null);
+			scriptToEvaluate = args.optString("scriptToEvaluate", null);
 			useAsync = args.optBoolean("useAsync", false);
 			proxy = args.optJSONObject("proxy");
+			closeOnInjectAnswer = args.optString("closeOnInjectAnswer", null);
 			closeOnReturnURLs = getOptDelimitedStringArray(args, "closeOnReturnURL");
 			closeOnRequestURLs = getOptDelimitedStringArray(args, "closeOnRequestURL");
 			closeCompareType = args.optString("closeCompareType", "contains");
@@ -399,6 +432,14 @@ public class InternalBrowser extends CordovaPlugin {
 			return value.split(";");
 		}
 		
+		public String getCloseOnInjectAnswer() {
+			return closeOnInjectAnswer;
+		}
+
+		public void setCloseOnInjectAnswer(String closeOnInjectAnswer) {
+			this.closeOnInjectAnswer = closeOnInjectAnswer;
+		}
+
 		public String getCloseCompareType()
 		{
 			return closeCompareType;
@@ -472,6 +513,10 @@ public class InternalBrowser extends CordovaPlugin {
 		public JSONObject getProxy()
 		{
 			return proxy;
+		}
+
+		public String getScriptToEvaluate() {
+			return String.format("alert('%s' + %s)", ALERT_TO_RETURN, scriptToEvaluate);
 		}
 
 	}
