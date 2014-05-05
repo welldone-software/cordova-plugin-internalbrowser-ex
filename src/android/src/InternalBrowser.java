@@ -245,13 +245,6 @@ public class InternalBrowser extends CordovaPlugin {
 			}
 			
 			@Override
-			public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-
-				
-				return super.shouldInterceptRequest(view, url);
-			}
-			
-			@Override
 			public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm)
 			{
 				Activity activity = cordova.getActivity();
@@ -516,7 +509,7 @@ public class InternalBrowser extends CordovaPlugin {
 		}
 
 		public String getScriptToEvaluate() {
-			return String.format("alert('%s' + %s)", ALERT_TO_RETURN, scriptToEvaluate);
+			return scriptToEvaluate == null ? null : String.format("alert('%s' + %s)", ALERT_TO_RETURN, scriptToEvaluate);
 		}
 
 	}
