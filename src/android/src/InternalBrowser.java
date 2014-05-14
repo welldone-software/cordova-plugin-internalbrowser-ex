@@ -76,7 +76,7 @@ public class InternalBrowser extends CordovaPlugin {
 			return;
 		}
 		
-		internalBrowserThreadInstance.closeDialog(null);
+		internalBrowserThreadInstance.closeDialog();
 	}
 	
 	public void refresh(CallbackContext callbackContext, JSONObject args) throws Exception{
@@ -123,16 +123,34 @@ public class InternalBrowser extends CordovaPlugin {
             this.packageName = cordova.getActivity().getApplicationContext().getPackageName();
 		}
 		
-		public void closeDialog(String result){
+		public void closeDialog(){
 			try{
-				if(result == null){
-					Log.d(TAG, "closing InternalBrowser on cancel button.");
-					response.put("cancelled", true);
-				}
-				else{
-					Log.d(TAG, "closing InternalBrowser with result url:" + result);
-					response.put("result", result);
-				}
+				Log.d(TAG, "closing InternalBrowser on cancel button.");
+				response.put("isDone", true);
+				dialog.dismiss();
+			}
+			catch (JSONException e){
+				e.printStackTrace();
+				Log.e(TAG, "Couldn't edit the response");
+			}
+		}
+		
+		public void closeDialogByUrl(String url){
+			try{
+				Log.d(TAG, "closing InternalBrowser with result url:" + url);
+				response.put("closedByURL", url);
+				dialog.dismiss();
+			}
+			catch (JSONException e){
+				e.printStackTrace();
+				Log.e(TAG, "Couldn't edit the response");
+			}
+		}
+		
+		public void closeDialogByEvaluatedScript(String evaluatedScript){
+			try{
+				Log.d(TAG, "closing InternalBrowser with evaluated script:" + evaluatedScript);
+				response.put("evaluatedScript", evaluatedScript);
 				dialog.dismiss();
 			}
 			catch (JSONException e){
@@ -157,7 +175,7 @@ public class InternalBrowser extends CordovaPlugin {
 			dialog.findViewById(getIdentifier("imageButton1", "id")).setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v){
-					closeDialog(null);
+					closeDialog();
 				}
 			});
 			
@@ -183,7 +201,7 @@ public class InternalBrowser extends CordovaPlugin {
 					};
 					
 					message = message.substring(ALERT_TO_RETURN.length());
-					closeDialog(message);
+					closeDialogByEvaluatedScript(message);
 					
 					return true;
 				}
@@ -244,6 +262,7 @@ public class InternalBrowser extends CordovaPlugin {
 				CookieManager.getInstance().removeExpiredCookie();
 			}
 			
+			
 			@Override
 			public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm)
 			{
@@ -293,7 +312,7 @@ public class InternalBrowser extends CordovaPlugin {
 				{
 					if (shouldCloseOnUrl(url, requestUrl))
 					{
-						closeDialog(url);
+						closeDialogByUrl(url);
 						return true;
 					}
 				}
@@ -322,7 +341,7 @@ public class InternalBrowser extends CordovaPlugin {
 				{
 					if (shouldCloseOnUrl(url, loadingUrl))
 					{
-						closeDialog(url);
+						closeDialogByUrl(url);
 						return;
 					}
 				}
